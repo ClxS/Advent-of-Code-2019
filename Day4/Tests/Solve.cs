@@ -1,29 +1,8 @@
 ﻿namespace Day4.Tests
 {
-    using System;
-    using System.Diagnostics;
-    using System.Reflection;
-    using System.Threading;
+    using CommonCode;
     using Xunit;
     using Xunit.Abstractions;
-    using Xunit.Sdk;
-
-    public class Timer : IDisposable
-    {
-        private readonly ITestOutputHelper testOutputHelper;
-        private readonly Stopwatch stopWatch;
-
-        public Timer(ITestOutputHelper testOutputHelper)
-        {
-            this.testOutputHelper = testOutputHelper;
-            this.stopWatch = Stopwatch.StartNew();
-        }
-
-        public void Dispose()
-        {
-            this.testOutputHelper.WriteLine($"Elapsed: {this.stopWatch.ElapsedMilliseconds}ms");
-        }
-    }
 
     public class Solve
     {
@@ -39,7 +18,7 @@
         {
             var solver = new NaiveSolver(false);
             int totalMatches;
-            using (new Timer(this.testOutputHelper))
+            using (new ScopedTimer(this.testOutputHelper))
             {
                 totalMatches = solver.Solve(new Data(206938, 679128));
             }
@@ -52,7 +31,7 @@
         {
             var solver = new NaiveSolver(true);
             int totalMatches;
-            using (new Timer(this.testOutputHelper))
+            using (new ScopedTimer(this.testOutputHelper))
             {
                 totalMatches = solver.Solve(new Data(206938, 679128));
             }
