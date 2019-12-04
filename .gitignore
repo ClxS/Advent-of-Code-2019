@@ -1,0 +1,7 @@
+Build/
+Reference/
+Obj/
+Data/
+bin/
+*.csproj
+.vs
