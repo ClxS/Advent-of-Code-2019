@@ -35,9 +35,22 @@
         }
 
         [Fact]
-        public void Naive()
+        public void NaivePart1()
         {
-            var solver = new NaiveSolver();
+            var solver = new NaiveSolver(false);
+            int totalMatches;
+            using (new Timer(this.testOutputHelper))
+            {
+                totalMatches = solver.Solve(new Data(206938, 679128));
+            }
+
+            this.testOutputHelper.WriteLine($"Total: {totalMatches}");
+        }
+
+        [Fact]
+        public void NaivePart2()
+        {
+            var solver = new NaiveSolver(true);
             int totalMatches;
             using (new Timer(this.testOutputHelper))
             {

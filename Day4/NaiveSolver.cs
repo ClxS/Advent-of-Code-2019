@@ -5,6 +5,13 @@
 
     public class NaiveSolver : ISolver
     {
+        private readonly bool stopRepeatedGroups;
+
+        public NaiveSolver(bool stopRepeatedGroups)
+        {
+            this.stopRepeatedGroups = stopRepeatedGroups;
+        }
+
         public int Solve(Data inputData)
         {
             var matchCount = 0;
@@ -38,11 +45,11 @@
             return true;
         }
 
-        private static bool MatchesAdjacentDigitRequirement(IReadOnlyList<byte> digits)
+        private bool MatchesAdjacentDigitRequirement(byte[] digits)
         {
-            for (var i = 0; i < digits.Count - 1; i++)
+            for (var i = 0; i < digits.Length - 1; i++)
             {
-                if (digits[i] == digits[i + 1])
+                if (digits[i] == digits[i + 1] && (!this.stopRepeatedGroups || ((i >= digits.Length - 2 || digits[i + 2] != digits[i]) && (i == 0 || digits[i - 1] != digits[i]))))
                 {
                     return true;
                 }
@@ -80,11 +87,8 @@
                     val[idx]++;
                     break;
                 }
-                else
-                {
-                    val[idx] = 0;
-                }
 
+                val[idx] = 0;
                 idx--;
             }
         }
