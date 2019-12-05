@@ -17,7 +17,7 @@
         [Fact]
         public void PopCountConfirm()
         {
-            var solver = new PopCountSolver();
+            var solver = new BasicLinqSolver();
             //using (new ScopedTimer(this.testOutputHelper))
             //{
             //    Assert.Equal(6, solver.Solve(new Data(new[]
@@ -45,7 +45,7 @@
         [Fact]
         public void PopCountQuestionData()
         {
-            var solver = new PopCountSolver();
+            var solver = new BasicLinqSolver();
             (int Distance, int Steps) answer;
             using (new ScopedTimer(this.testOutputHelper))
             {
