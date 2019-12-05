@@ -17,6 +17,10 @@
                 (2, new Multiply()),
                 (3, new Input()),
                 (4, new Output()),
+                (5, new JmpTrue()),
+                (6, new JmpFalse()),
+                (7, new LessThan()),
+                (8, new Equals()),
                 (99, new Break())
             )
             {
@@ -24,8 +28,8 @@
             };
 
             var output = 0;
-            IntMachine.InputRequested += (sender, args) => { args.Value = 1; };
-            IntMachine.Output += (sender, args) => { output = args.Output; };
+            intMachine.InputRequested += (sender, args) => { args.Value = inputData.InputValue; };
+            intMachine.Output += (sender, args) => { output = args.Output; };
 
             var state = intMachine.Process(data);
 

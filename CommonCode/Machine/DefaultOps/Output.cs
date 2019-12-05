@@ -8,10 +8,9 @@ namespace CommonCode.Machine.DefaultOps
     {
         public int DataLength => 1;
 
-        public bool Act(ReadOnlySpan<int> opData, ReadOnlySpan<byte> modeIndicators, Memory<int> memory)
+        public void Act(IntMachine machine, ReadOnlySpan<int> opData, ReadOnlySpan<byte> mode)
         {
-            IntMachine.SignalOutput(memory.Span[opData[0]]);
-            return true;
+            machine.SignalOutput(machine.MarshallAccess(opData[0], mode[0]));
         }
     }
 }

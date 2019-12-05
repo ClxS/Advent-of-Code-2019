@@ -6,11 +6,10 @@
     {
         public int DataLength => 1;
 
-        public bool Act(ReadOnlySpan<int> opData, ReadOnlySpan<byte> modeIndicators, Memory<int> memory)
+        public void Act(IntMachine machine, ReadOnlySpan<int> opData, ReadOnlySpan<byte> modeIndicators)
         {
-            var input = IntMachine.RequestOutput();
-            memory.Span[opData[0]] = input;
-            return true;
+            var input = machine.RequestOutput();
+            machine.Write(opData[0], input);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace CommonCode.Machine
+﻿namespace CommonCode.Machine.DefaultOps
 {
     using System;
 
@@ -6,6 +6,6 @@
     {
         int DataLength { get; }
 
-        bool Act(ReadOnlySpan<int> opData, ReadOnlySpan<byte> modeIndicators, Memory<int> memory);
+        void Act(IntMachine machine, ReadOnlySpan<int> opData, ReadOnlySpan<byte> modes);
     }
 }

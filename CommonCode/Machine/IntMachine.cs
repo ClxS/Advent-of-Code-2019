@@ -3,10 +3,15 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using DefaultOps;
 
     public class IntMachine
     {
         private readonly Dictionary<int, IOp> ops;
+        private bool breakFlag;
+        private bool jumpFlag;
+        private Memory<int> memory;
+        private int readPivot;
 
         public IntMachine(params (int OpCode, IOp Operation)[] supportOpCodes)
         {
@@ -14,25 +19,34 @@
             this.EnableExtendedOpCodeSupport = false;
         }
 
-        public static event EventHandler<InputEventArgs> InputRequested;
+        public event EventHandler<InputEventArgs> InputRequested;
 
-        public static event EventHandler<OutputEventArgs> Output;
+        public event EventHandler<OutputEventArgs> Output;
 
         public bool EnableExtendedOpCodeSupport { get; set; }
 
+        public void Break()
+        {
+            this.breakFlag = true;
+        }
+
+        public void Jump(int address)
+        {
+            this.jumpFlag = true;
+            this.readPivot = address;
+        }
+
         public MachineState Process(int[] data)
         {
-            Memory<int> memory = data;
-            var state = new MachineState(memory);
-            var dataPivot = memory.Span;
-            var readPivot = 0;
+            this.memory = data;
+            var state = new MachineState(this.memory);
+            var dataPivot = this.memory.Span;
+            this.readPivot = 0;
             Span<byte> modeInfoBuffer = stackalloc byte[16];
             Span<byte> componentsBuffer = stackalloc byte[16];
-            while (true)
+            while (!this.breakFlag)
             {
                 IOp op;
-                bool canContinue;
-
                 if (this.EnableExtendedOpCodeSupport)
                 {
                     var elements = this.DecomposeInt(dataPivot[0], componentsBuffer);
@@ -46,7 +60,7 @@
                     modeSpan.Reverse();
                     modeSpan.CopyTo(modeInfo);
 
-                    canContinue = op.Act(dataPivot.Slice(1, op.DataLength), modeInfo, memory);
+                    op.Act(this, dataPivot.Slice(1, op.DataLength), modeInfo);
                 }
                 else
                 {
@@ -54,40 +68,43 @@
                     var modeInfo = modeInfoBuffer.Slice(0, op.DataLength);
                     modeInfo.Fill(0);
 
-                    canContinue = op.Act(dataPivot.Slice(1, op.DataLength), modeInfo, memory);
+                    op.Act(this, dataPivot.Slice(1, op.DataLength), modeInfo);
                 }
 
-                if (canContinue)
+                if (!this.jumpFlag)
                 {
-                    readPivot += op.DataLength + 1;
-                    dataPivot = memory.Slice(readPivot).Span;
+                    this.readPivot += op.DataLength + 1;
                 }
-                else
-                {
-                    break;
-                }
+
+                dataPivot = this.memory.Slice(this.readPivot).Span;
+                this.jumpFlag = false;
             }
 
             return state;
         }
 
-        internal static int MarshallAccess(int value, int mode, Memory<int> memory)
+        public void Write(int address, int value)
+        {
+            this.memory.Span[address] = value;
+        }
+
+        internal int MarshallAccess(int value, int mode)
         {
             return mode == 0
-                ? memory.Span[value]
+                ? this.memory.Span[value]
                 : value;
         }
 
-        internal static int RequestOutput()
+        internal int RequestOutput()
         {
             var args = new InputEventArgs();
-            InputRequested?.Invoke(null, args);
+            this.InputRequested?.Invoke(null, args);
             return args.Value;
         }
 
-        internal static void SignalOutput(int output)
+        internal void SignalOutput(int output)
         {
-            Output?.Invoke(null, new OutputEventArgs(output));
+            this.Output?.Invoke(null, new OutputEventArgs(output));
         }
 
         private int DecomposeInt(int value, Span<byte> outValue)

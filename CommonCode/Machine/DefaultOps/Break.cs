@@ -6,9 +6,9 @@
     {
         public int DataLength => 0;
 
-        public bool Act(ReadOnlySpan<int> opData, ReadOnlySpan<byte> modeIndicators, Memory<int> memory)
+        public void Act(IntMachine machine, ReadOnlySpan<int> opData, ReadOnlySpan<byte> modeIndicators)
         {
-            return false;
+            machine.Break();
         }
     }
 }

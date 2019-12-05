@@ -6,11 +6,9 @@
     {
         public int DataLength => 3;
 
-        public bool Act(ReadOnlySpan<int> opData, ReadOnlySpan<byte> mode, Memory<int> memory)
+        public void Act(IntMachine machine, ReadOnlySpan<int> opData, ReadOnlySpan<byte> mode)
         {
-            memory.Span[opData[2]] = IntMachine.MarshallAccess(opData[0], mode[0], memory) *
-                                     IntMachine.MarshallAccess(opData[1], mode[1], memory);
-            return true;
+            machine.Write(opData[2], machine.MarshallAccess(opData[0], mode[0]) * machine.MarshallAccess(opData[1], mode[1]));
         }
     }
 }
