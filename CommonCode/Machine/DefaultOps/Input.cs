@@ -2,13 +2,15 @@
 {
     using System;
 
-    public class Break : IOp
+    public class Input : IOp
     {
-        public int DataLength => 0;
+        public int DataLength => 1;
 
         public bool Act(ReadOnlySpan<int> opData, ReadOnlySpan<byte> modeIndicators, Memory<int> memory)
         {
-            return false;
+            var input = IntMachine.RequestOutput();
+            memory.Span[opData[0]] = input;
+            return true;
         }
     }
 }
