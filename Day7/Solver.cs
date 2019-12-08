@@ -37,11 +37,6 @@
             foreach(var phase in GetAvailableThrusterCombinations(inputData.MinimumPhaseSettings, inputData.MaximumPhaseSettings))
             {
                 var reversedPhase = phase.Reverse().ToArray();
-                if (!IsSuitablePhase(reversedPhase))
-                {
-                    continue;
-                }
-                
                 var value = this.RunWithPhaseSettings(data, reversedPhase.Select(x => (int)x));
                 if (value > largestValue)
                 {
@@ -79,11 +74,6 @@
                     }
                 }
             }
-        }
-
-        private static bool IsSuitablePhase(IEnumerable<byte> amplifierPhaseSettings)
-        {
-            return amplifierPhaseSettings.All(entry => entry <= maxPhase);
         }
 
         private int RunWithPhaseSettings(int[] opCodes, IEnumerable<int> phaseValues)
