@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using DefaultOps;
+    using Utility.Extentions;
 
     public class IntMachine
     {
@@ -49,7 +50,7 @@
                 IOp op;
                 if (this.EnableExtendedOpCodeSupport)
                 {
-                    var elements = this.DecomposeInt(dataPivot[0], componentsBuffer);
+                    var elements = dataPivot[0].DecomposeInt(componentsBuffer);
                     var opData = componentsBuffer.Slice(0, elements);
                     var opCode = elements == 1 ? opData[0] : opData[^2] * 10 + opData[^1];
 
@@ -105,21 +106,6 @@
         internal void SignalOutput(int output)
         {
             this.Output?.Invoke(null, new OutputEventArgs(output));
-        }
-
-        private int DecomposeInt(int value, Span<byte> outValue)
-        {
-            var count = 0;
-            while (value > 0)
-            {
-                count++;
-                var digit = (byte)(value % 10);
-                value /= 10;
-                outValue[^count] = digit;
-            }
-
-            outValue.Slice(outValue.Length - count).CopyTo(outValue);
-            return count;
         }
 
         public class MachineState
