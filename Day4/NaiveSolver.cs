@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using CommonCode.Utility.Extentions;
 
     public class NaiveSolver : ISolver
     {
@@ -15,10 +16,10 @@
         public int Solve(Data inputData)
         {
             var matchCount = 0;
-            var digits = DecomposeInt(inputData.StartValue);
+            var digits = inputData.StartValue.DecomposeInt();
             for (var i = 0; i <= inputData.EndValue - inputData.StartValue; i++)
             {
-                if (MatchesAdjacentDigitRequirement(digits) && MatchesNeverDecreaseValueRequirement(digits))
+                if (this.MatchesAdjacentDigitRequirement(digits) && MatchesNeverDecreaseValueRequirement(digits))
                 {
                     matchCount++;
                 }
@@ -56,20 +57,6 @@
             }
 
             return false;
-        }
-
-        private static byte[] DecomposeInt(int value)
-        {
-            var output = new Stack<byte>();
-
-            while (value > 0)
-            {
-                var digit = (byte)(value % 10);
-                value /= 10;
-                output.Push(digit);
-            }
-
-            return output.ToArray();
         }
 
         private static void Increment(IList<byte> val)
