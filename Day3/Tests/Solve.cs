@@ -18,15 +18,6 @@
         public void PopCountConfirm()
         {
             var solver = new BasicLinqSolver();
-            //using (new ScopedTimer(this.testOutputHelper))
-            //{
-            //    Assert.Equal(6, solver.Solve(new Data(new[]
-            //    {
-            //        "R8,U5,L5,D3",
-            //        "U7,R6,D4,L4"
-            //    })).Distance);
-            //}
-
             (int Distance, int Steps) value;
             using (new ScopedTimer(this.testOutputHelper))
             {
