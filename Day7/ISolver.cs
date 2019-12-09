@@ -1,7 +1,9 @@
 ﻿namespace Day7
 {
+    using System.Threading.Tasks;
+
     public interface ISolver
     {
-        int Solve(Data inputData);
+        Task<int> Solve(Data inputData);
     }
 }

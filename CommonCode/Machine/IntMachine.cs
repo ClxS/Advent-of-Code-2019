@@ -2,7 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
+    using System.Threading.Tasks;
     using DefaultOps;
     using Utility.Extentions;
 
@@ -24,7 +26,11 @@
 
         public event EventHandler<OutputEventArgs> Output;
 
+        public event EventHandler Completed;
+        
         public bool EnableExtendedOpCodeSupport { get; set; }
+
+        public int Id { get; set; }
 
         public void Break()
         {
@@ -72,6 +78,7 @@
                     op.Act(this, dataPivot.Slice(1, op.DataLength), modeInfo);
                 }
 
+                Debug.WriteLine($"Machine {this.Id} - {op.GetType().Name}");
                 if (!this.jumpFlag)
                 {
                     this.readPivot += op.DataLength + 1;
@@ -81,11 +88,65 @@
                 this.jumpFlag = false;
             }
 
+            this.Completed?.Invoke(null, EventArgs.Empty);
             return state;
         }
 
+        public async Task<MachineState> ProcessAsync(int[] data)
+        {
+            this.memory = data.ToArray();
+            var state = new MachineState(this.memory);
+            var dataPivot = this.memory;
+            this.readPivot = 0;
+            while (!this.breakFlag)
+            {
+                var (op, opData, modeInfo) = this.GetOpCodeAndMode(dataPivot);
+                Debug.WriteLine($"Machine {this.Id} - {op.GetType().Name} ____ {string.Join(" ,", opData)}");
+                switch (op)
+                {
+                    case IAsyncOp asyncOp:
+                        await asyncOp.Act(this, opData, modeInfo);
+                        break;
+                    default:
+                        op.Act(this, opData, modeInfo);
+                        break;
+                }
+
+                if (!this.jumpFlag)
+                {
+                    this.readPivot += op.DataLength + 1;
+                }
+
+                dataPivot = this.memory.Slice(this.readPivot);
+                this.jumpFlag = false;
+            }
+
+            return state;
+        }
+
+        private (IOp Op, int[] data, byte[] Modes) GetOpCodeAndMode(Memory<int> dataPivot)
+        {
+            Span<byte> modeInfoBuffer = stackalloc byte[16];
+            Span<byte> componentsBuffer = stackalloc byte[16];
+            var span = dataPivot.Span;
+            var elements = span[0].DecomposeInt(componentsBuffer);
+            var opData = componentsBuffer.Slice(0, elements);
+            var opCode = elements == 1 ? opData[0] : opData[^2] * 10 + opData[^1];
+
+            var op = this.ops[opCode];
+            var modeInfo = modeInfoBuffer.Slice(0, op.DataLength);
+            modeInfo.Fill(0);
+            var modeSpan = opData.Slice(0, Math.Max(0, elements - 2));
+            modeSpan.Reverse();
+            modeSpan.CopyTo(modeInfo);
+
+            return (op, span.Slice(1, op.DataLength).ToArray(), modeInfo.ToArray().Take(op.DataLength).ToArray());
+        }
+
+
         public void Write(int address, int value)
         {
+            Debug.WriteLine($"Machine {this.Id} = Write {value} to {address}");
             this.memory.Span[address] = value;
         }
 
@@ -96,10 +157,22 @@
                 : value;
         }
 
+        internal async Task<int> RequestOutputAsync()
+        {
+            var args = new InputEventArgs();
+            this.InputRequested?.Invoke(null, args);
+            return await args.ValueAsync;
+        }
+
         internal int RequestOutput()
         {
             var args = new InputEventArgs();
             this.InputRequested?.Invoke(null, args);
+            if (!args.IsSynchronous)
+            {
+                throw new Exception("Synchronous input requested. This should be set using InputEventArgs.Value");
+            }
+
             return args.Value;
         }
 

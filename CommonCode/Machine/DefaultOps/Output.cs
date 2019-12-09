@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace CommonCode.Machine.DefaultOps
+﻿namespace CommonCode.Machine.DefaultOps
 {
+    using System;
+
     public class Output : IOp
     {
         public int DataLength => 1;

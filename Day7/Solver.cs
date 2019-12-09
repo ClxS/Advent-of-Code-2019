@@ -1,8 +1,11 @@
 ﻿namespace Day7
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Threading.Channels;
+    using System.Threading.Tasks;
     using CommonCode.Machine;
     using CommonCode.Machine.DefaultOps;
 
@@ -28,19 +31,17 @@
             };
         }
 
-        public int Solve(Data inputData)
+        public async Task<int> Solve(Data inputData)
         {
             var data = inputData.OpCodes.Split(',').Select(int.Parse).ToArray();
 
-            int largestValue = 0;
-
-            foreach(var phase in GetAvailableThrusterCombinations(inputData.MinimumPhaseSettings, inputData.MaximumPhaseSettings))
+            var largestValue = 0;
+            //foreach(var phase in GetAvailableThrusterCombinations(inputData.MinimumPhaseSettings, inputData.MaximumPhaseSettings))
             {
-                var reversedPhase = phase.Reverse().ToArray();
-                var value = this.RunWithPhaseSettings(data, reversedPhase.Select(x => (int)x));
+                var phase = new[] { 1, 0, 4, 3, 2 };
+                var value = await this.RunWithPhaseSettings(data, phase.Select(x => (int)x), inputData.l);
                 if (value > largestValue)
                 {
-                    Debug.WriteLine($"Blah {string.Join(", ", phase)}");
                     largestValue = value;
                 }
             }
@@ -76,35 +77,55 @@
             }
         }
 
-        private int RunWithPhaseSettings(int[] opCodes, IEnumerable<int> phaseValues)
+        private async Task<int> RunWithPhaseSettings(int[] opCodes, IEnumerable<int> phaseValues, bool useLoopback)
         {
-            var phaseInputData = new Stack<int>(phaseValues);
+            var rootChannel = Channel.CreateUnbounded<int>();
+            var amplifiers = this.CreateAmplifiers(phaseValues, rootChannel, out var targetChannel);
+            await rootChannel.Writer.WriteAsync(0);
 
-            // Always use 0 as the second phase input for the first iteration
-            PopInputSignal(phaseInputData, 0);
-
-            var amplifiers = this.CreateAmplifiers(phaseInputData);
-            foreach (var amplifier in amplifiers)
+            var machineTasks = new List<Task>();
+            foreach (var machine in amplifiers)
             {
-                amplifier.Process(opCodes);
+                machineTasks.Add(machine.ProcessAsync(opCodes));
             }
 
-            return phaseInputData.Pop();
+            await Task.WhenAll(machineTasks);
+
+            var lastValue = 0;
+            while(await targetChannel.Reader.WaitToReadAsync())
+            {
+                lastValue = await targetChannel.Reader.ReadAsync();
+            }
+
+            return lastValue;
         }
 
-        private IntMachine CreateIntMachine(Stack<int> phaseData)
+        private const bool useSyncValue = false;
+
+        private IntMachine CreateIntMachine(Channel<int> inputCommChannel, Channel<int> outputCommChannel, int machineIdx)
         {
             var intMachine = new IntMachine(this.intMachineSupportedCodes)
             {
-                EnableExtendedOpCodeSupport = true
+                EnableExtendedOpCodeSupport = true,
+                Id = machineIdx
             };
             intMachine.InputRequested += (sender, args) =>
             {
-                args.Value = phaseData.Pop();
+                args.ValueAsync = Task.Run(async () =>
+                {
+                    var value = await inputCommChannel.Reader.ReadAsync();
+                    Debug.WriteLine($"Machine {machineIdx} - Read {value}");
+                    return value;
+                });
             };
             intMachine.Output += (sender, args) =>
             {
-                PopInputSignal(phaseData, args.Output);
+                Debug.WriteLine($"Machine {machineIdx} - Write {args.Output}");
+                _ = outputCommChannel.Writer.WriteAsync(args.Output);
+            };
+            intMachine.Completed += (sender, args) =>
+            {
+                outputCommChannel.Writer.Complete();
             };
 
             return intMachine;
@@ -124,12 +145,21 @@
             }
         }
 
-        private IEnumerable<IntMachine> CreateAmplifiers(Stack<int> phaseData)
+        private IEnumerable<IntMachine> CreateAmplifiers(IEnumerable<int> phaseData, Channel<int> rootChannel, out Channel<int> destChannel)
         {
+            destChannel = null;
+
             var amplifiers = new List<IntMachine>();
-            for (var amplifierIdx = 0; amplifierIdx < amplifierCount; ++amplifierIdx)
+            var i = 0;
+
+            foreach(var phase in phaseData)
             {
-                amplifiers.Add(this.CreateIntMachine(phaseData));
+                destChannel = Channel.CreateUnbounded<int>();
+                rootChannel.Writer.WriteAsync(phase);
+                amplifiers.Add(this.CreateIntMachine(rootChannel, destChannel, i));
+                rootChannel = destChannel;
+
+                i++;
             }
 
             return amplifiers;
