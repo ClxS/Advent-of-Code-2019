@@ -78,7 +78,6 @@
                     op.Act(this, dataPivot.Slice(1, op.DataLength), modeInfo);
                 }
 
-                Debug.WriteLine($"Machine {this.Id} - {op.GetType().Name}");
                 if (!this.jumpFlag)
                 {
                     this.readPivot += op.DataLength + 1;
@@ -101,7 +100,6 @@
             while (!this.breakFlag)
             {
                 var (op, opData, modeInfo) = this.GetOpCodeAndMode(dataPivot);
-                Debug.WriteLine($"Machine {this.Id} - {op.GetType().Name} ____ {string.Join(" ,", opData)}");
                 switch (op)
                 {
                     case IAsyncOp asyncOp:
@@ -121,6 +119,7 @@
                 this.jumpFlag = false;
             }
 
+            this.Completed?.Invoke(null, EventArgs.Empty);
             return state;
         }
 
@@ -146,7 +145,6 @@
 
         public void Write(int address, int value)
         {
-            Debug.WriteLine($"Machine {this.Id} = Write {value} to {address}");
             this.memory.Span[address] = value;
         }
 

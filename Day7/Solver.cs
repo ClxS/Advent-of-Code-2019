@@ -36,10 +36,9 @@
             var data = inputData.OpCodes.Split(',').Select(int.Parse).ToArray();
 
             var largestValue = 0;
-            //foreach(var phase in GetAvailableThrusterCombinations(inputData.MinimumPhaseSettings, inputData.MaximumPhaseSettings))
+            foreach(var phase in GetAvailableThrusterCombinations(inputData.MinimumPhaseSettings, inputData.MaximumPhaseSettings))
             {
-                var phase = new[] { 1, 0, 4, 3, 2 };
-                var value = await this.RunWithPhaseSettings(data, phase.Select(x => (int)x), inputData.l);
+                var value = await this.RunWithPhaseSettings(data, phase.Select(x => (int)x), inputData.UseLoopback);
                 if (value > largestValue)
                 {
                     largestValue = value;
@@ -51,7 +50,7 @@
 
         private static IEnumerable<IEnumerable<byte>> GetAvailableThrusterCombinations(int min, int max)
         {
-            return GetPermutations(Enumerable.Range(min, max + 1).Select(x => (byte)x));
+            return GetPermutations(Enumerable.Range(min, max - min + 1).Select(x => (byte)x));
         }
 
         private static IEnumerable<IEnumerable<T>> GetPermutations<T>(IEnumerable<T> items)
@@ -89,15 +88,23 @@
                 machineTasks.Add(machine.ProcessAsync(opCodes));
             }
 
-            await Task.WhenAll(machineTasks);
+            var values = new List<int>();
+            await Task.Run(async () =>
+              {
+                  while (await targetChannel.Reader.WaitToReadAsync())
+                  {
+                      var lastValue = await targetChannel.Reader.ReadAsync();
+                      values.Add(lastValue);
+                      if (useLoopback)
+                      {
+                          await rootChannel.Writer.WriteAsync(lastValue);
+                      }
+                  }
+              }).ConfigureAwait(false);
 
-            var lastValue = 0;
-            while(await targetChannel.Reader.WaitToReadAsync())
-            {
-                lastValue = await targetChannel.Reader.ReadAsync();
-            }
-
-            return lastValue;
+            await Task.WhenAll(machineTasks).ConfigureAwait(false);
+            
+            return values.Max();
         }
 
         private const bool useSyncValue = false;
@@ -114,13 +121,11 @@
                 args.ValueAsync = Task.Run(async () =>
                 {
                     var value = await inputCommChannel.Reader.ReadAsync();
-                    Debug.WriteLine($"Machine {machineIdx} - Read {value}");
                     return value;
                 });
             };
             intMachine.Output += (sender, args) =>
             {
-                Debug.WriteLine($"Machine {machineIdx} - Write {args.Output}");
                 _ = outputCommChannel.Writer.WriteAsync(args.Output);
             };
             intMachine.Completed += (sender, args) =>
