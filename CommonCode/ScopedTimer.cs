@@ -17,6 +17,7 @@
 
         public void Dispose()
         {
+            this.stopWatch.Stop();
             this.testOutputHelper.WriteLine($"Elapsed: {this.stopWatch.ElapsedMilliseconds}ms");
         }
     }

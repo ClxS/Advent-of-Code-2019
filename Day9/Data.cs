@@ -2,14 +2,14 @@
 {
     public class Data
     {
-        public Data(string opcodes, int value)
+        public Data(string opcodes, int inputValue)
         {
             this.OpCodes = opcodes;
-            this.Value = value;
+            this.InputValue = inputValue;
         }
 
         public string OpCodes { get; }
 
-        public int Value { get; }
+        public int InputValue { get; }
     }
 }
