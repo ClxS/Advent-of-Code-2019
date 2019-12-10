@@ -6,6 +6,6 @@
     {
         int DataLength { get; }
 
-        void Act(IntMachine machine, ReadOnlySpan<int> opData, ReadOnlySpan<byte> modes);
+        void Act(IntMachine machine, ReadOnlySpan<long> opData, ReadOnlySpan<byte> modes);
     }
 }

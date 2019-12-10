@@ -19,7 +19,7 @@
 
             var state = intMachine.Process(data);
 
-            return state.Memory.Span[0];
+            return (int)state.Memory.Span[0];
         }
     }
 }

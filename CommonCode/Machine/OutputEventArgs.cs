@@ -4,9 +4,9 @@
 
     public class OutputEventArgs : EventArgs
     {
-        public int Output { get; }
+        public long Output { get; }
 
-        public OutputEventArgs(int output)
+        public OutputEventArgs(long output)
         {
             this.Output = output;
         }

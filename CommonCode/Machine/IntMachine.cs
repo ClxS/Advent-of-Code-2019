@@ -6,18 +6,25 @@
     using System.Linq;
     using System.Threading.Tasks;
     using DefaultOps;
+    using Utility.Extensions;
     using Utility.Extentions;
 
     public class IntMachine
     {
-        private readonly Dictionary<int, IOp> ops;
+        private readonly Dictionary<long, IOp> ops;
         private bool breakFlag;
         private bool jumpFlag;
-        private Memory<int> memory;
+        private Memory<long> memory;
         private int readPivot;
         private int relativeBase;
 
         public IntMachine(params (int OpCode, IOp Operation)[] supportOpCodes)
+        {
+            this.ops = supportOpCodes.ToDictionary(v => (long)v.OpCode, v => v.Operation);
+            this.EnableExtendedOpCodeSupport = false;
+        }
+
+        public IntMachine(params (long OpCode, IOp Operation)[] supportOpCodes)
         {
             this.ops = supportOpCodes.ToDictionary(v => v.OpCode, v => v.Operation);
             this.EnableExtendedOpCodeSupport = false;
@@ -40,15 +47,20 @@
             this.breakFlag = true;
         }
 
-        public void Jump(int address)
+        public void Jump(long address)
         {
             this.jumpFlag = true;
-            this.readPivot = address;
+            this.readPivot = (int)address;
         }
 
         public MachineState Process(int[] data)
         {
-            this.memory = new int[Math.Max(data.Length, this.MinimumBufferSize)];
+            return this.Process(data.Select(d => (long)d).ToArray());
+        }
+
+        public MachineState Process(long[] data)
+        {
+            this.memory = new long[Math.Max(data.Length, this.MinimumBufferSize)];
             data.CopyTo(this.memory);
 
             var state = new MachineState(this.memory);
@@ -62,7 +74,7 @@
                 IOp op;
                 if (this.EnableExtendedOpCodeSupport)
                 {
-                    var elements = dataPivot[0].DecomposeInt(componentsBuffer);
+                    var elements = dataPivot[0].DecomposeLong(componentsBuffer);
                     var opData = componentsBuffer.Slice(0, elements);
                     var opCode = elements == 1 ? opData[0] : opData[^2] * 10 + opData[^1];
 
@@ -99,7 +111,14 @@
 
         public async Task<MachineState> ProcessAsync(int[] data)
         {
-            this.memory = data.ToArray();
+            return await this.ProcessAsync(data.Select(d => (long)d).ToArray());
+        }
+
+        public async Task<MachineState> ProcessAsync(long[] data)
+        {
+            this.memory = new long[Math.Max(data.Length, this.MinimumBufferSize)];
+            data.CopyTo(this.memory);
+
             var state = new MachineState(this.memory);
             var dataPivot = this.memory;
             this.readPivot = 0;
@@ -129,12 +148,12 @@
             return state;
         }
 
-        private (IOp Op, int[] data, byte[] Modes) GetOpCodeAndMode(Memory<int> dataPivot)
+        private (IOp Op, long[] data, byte[] Modes) GetOpCodeAndMode(Memory<long> dataPivot)
         {
             Span<byte> modeInfoBuffer = stackalloc byte[16];
             Span<byte> componentsBuffer = stackalloc byte[16];
             var span = dataPivot.Span;
-            var elements = span[0].DecomposeInt(componentsBuffer);
+            var elements = span[0].DecomposeLong(componentsBuffer);
             var opData = componentsBuffer.Slice(0, elements);
             var opCode = elements == 1 ? opData[0] : opData[^2] * 10 + opData[^1];
 
@@ -148,35 +167,35 @@
             return (op, span.Slice(1, op.DataLength).ToArray(), modeInfo.ToArray().Take(op.DataLength).ToArray());
         }
 
-        public void Write(int address, int value)
+        public void Write(long address, long value)
         {
-            this.memory.Span[address] = value;
+            this.memory.Span[(int)address] = value;
         }
 
-        internal int MarshallAccess(int value, int mode)
+        internal long MarshallAccess(long value, int mode)
         {
             switch (mode)
             {
-                case 0: return this.memory.Span[value];
+                case 0: return this.memory.Span[(int)value];
                 case 1: return value;
-                case 2: return this.memory.Span[this.relativeBase + value];
+                case 2: return this.memory.Span[(int)(this.relativeBase + value)];
                 default: throw new ArgumentOutOfRangeException();
             }
         }
 
-        internal void OffsetRelativeBase(int address)
+        internal void OffsetRelativeBase(long address)
         {
-            this.relativeBase += address;
+            this.relativeBase += (int)address;
         }
 
-        internal async Task<int> RequestOutputAsync()
+        internal async Task<long> RequestOutputAsync()
         {
             var args = new InputEventArgs();
             this.InputRequested?.Invoke(null, args);
             return await args.ValueAsync;
         }
 
-        internal int RequestOutput()
+        internal long RequestOutput()
         {
             var args = new InputEventArgs();
             this.InputRequested?.Invoke(null, args);
@@ -188,19 +207,19 @@
             return args.Value;
         }
 
-        internal void SignalOutput(int output)
+        internal void SignalOutput(long output)
         {
             this.Output?.Invoke(null, new OutputEventArgs(output));
         }
 
         public class MachineState
         {
-            public MachineState(Memory<int> memory)
+            public MachineState(Memory<long> memory)
             {
                 this.Memory = memory;
             }
 
-            public Memory<int> Memory { get; }
+            public Memory<long> Memory { get; }
         }
     }
 }

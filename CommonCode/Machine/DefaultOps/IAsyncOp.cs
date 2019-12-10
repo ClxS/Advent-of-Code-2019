@@ -4,6 +4,6 @@
 
     public interface IAsyncOp : IOp
     {
-        Task Act(IntMachine machine, int[] opData, byte[] modes);
+        Task Act(IntMachine machine, long[] opData, byte[] modes);
     }
 }

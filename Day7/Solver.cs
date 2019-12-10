@@ -118,12 +118,12 @@
                 args.ValueAsync = Task.Run(async () =>
                 {
                     var value = await inputCommChannel.Reader.ReadAsync();
-                    return value;
+                    return (long)value;
                 });
             };
             intMachine.Output += (sender, args) =>
             {
-                _ = outputCommChannel.Writer.WriteAsync(args.Output);
+                _ = outputCommChannel.Writer.WriteAsync((int)args.Output);
             };
             intMachine.Completed += (sender, args) =>
             {

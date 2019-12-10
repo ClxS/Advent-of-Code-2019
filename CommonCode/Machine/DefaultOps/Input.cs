@@ -7,13 +7,13 @@
     { 
         public int DataLength => 1;
 
-        void IOp.Act(IntMachine machine, ReadOnlySpan<int> opData, ReadOnlySpan<byte> modes)
+        void IOp.Act(IntMachine machine, ReadOnlySpan<long> opData, ReadOnlySpan<byte> modes)
         {
             var input = machine.RequestOutput();
             machine.Write(opData[0], input);
         }
 
-        public async Task Act(IntMachine machine, int[] opData, byte[] modes)
+        public async Task Act(IntMachine machine, long[] opData, byte[] modes)
         {
             var input = await machine.RequestOutputAsync();
             machine.Write(opData[0], input);

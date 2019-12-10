@@ -5,11 +5,11 @@
 
     public class InputEventArgs : EventArgs
     {
-        private int value;
+        private long value;
         
         public bool IsSynchronous { get; private set; }
 
-        public int Value
+        public long Value
         {
             get => this.value;
             set
@@ -20,7 +20,7 @@
             }
         }
 
-        public Task<int> ValueAsync { get; set; }
+        public Task<long> ValueAsync { get; set; }
 
         public InputEventArgs()
         {

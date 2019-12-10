@@ -6,7 +6,7 @@
     {
         public int DataLength => 2;
 
-        public void Act(IntMachine machine, ReadOnlySpan<int> opData, ReadOnlySpan<byte> modes)
+        public void Act(IntMachine machine, ReadOnlySpan<long> opData, ReadOnlySpan<byte> modes)
         {
             if (machine.MarshallAccess(opData[0], modes[0]) != 0)
             {

@@ -29,7 +29,7 @@
 
             var output = 0;
             intMachine.InputRequested += (sender, args) => { args.Value = inputData.InputValue; };
-            intMachine.Output += (sender, args) => { output = args.Output; };
+            intMachine.Output += (sender, args) => { output = (int)args.Output; };
 
             var state = intMachine.Process(data);
 

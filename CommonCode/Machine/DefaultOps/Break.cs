@@ -6,7 +6,7 @@
     {
         public int DataLength => 0;
 
-        public void Act(IntMachine machine, ReadOnlySpan<int> opData, ReadOnlySpan<byte> modeIndicators)
+        public void Act(IntMachine machine, ReadOnlySpan<long> opData, ReadOnlySpan<byte> modeIndicators)
         {
             machine.Break();
         }
