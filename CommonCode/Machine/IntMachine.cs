@@ -142,7 +142,6 @@
             return (op, span.Slice(1, op.DataLength).ToArray(), modeInfo.ToArray().Take(op.DataLength).ToArray());
         }
 
-
         public void Write(int address, int value)
         {
             this.memory.Span[address] = value;
