@@ -10,11 +10,11 @@
         {
             if (machine.MarshallAccess(opData[0], modes[0]) < machine.MarshallAccess(opData[1], modes[1]))
             {
-                machine.Write(opData[2], 1);
+                machine.Write(opData[2], modes[2], 1);
             }
             else
             {
-                machine.Write(opData[2], 0);
+                machine.Write(opData[2], modes[2], 0);
             }
         }
     }

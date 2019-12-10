@@ -167,9 +167,9 @@
             return (op, span.Slice(1, op.DataLength).ToArray(), modeInfo.ToArray().Take(op.DataLength).ToArray());
         }
 
-        public void Write(long address, long value)
+        public void Write(long address, int mode, long value)
         {
-            this.memory.Span[(int)address] = value;
+            this.memory.Span[this.GetWriteAddress(address, mode)] = value;
         }
 
         internal long MarshallAccess(long value, int mode)
@@ -179,6 +179,16 @@
                 case 0: return this.memory.Span[(int)value];
                 case 1: return value;
                 case 2: return this.memory.Span[(int)(this.relativeBase + value)];
+                default: throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        internal int GetWriteAddress(long value, int mode)
+        {
+            switch (mode)
+            {
+                case 0: return (int)value;
+                case 2: return (int)(this.relativeBase + value);
                 default: throw new ArgumentOutOfRangeException();
             }
         }
