@@ -15,6 +15,7 @@
         private bool jumpFlag;
         private Memory<int> memory;
         private int readPivot;
+        private int relativeBase;
 
         public IntMachine(params (int OpCode, IOp Operation)[] supportOpCodes)
         {
@@ -29,6 +30,8 @@
         public event EventHandler Completed;
         
         public bool EnableExtendedOpCodeSupport { get; set; }
+
+        public int MinimumBufferSize { get; set; }
 
         public int Id { get; set; }
 
@@ -45,10 +48,13 @@
 
         public MachineState Process(int[] data)
         {
-            this.memory = data;
+            this.memory = new int[Math.Max(data.Length, this.MinimumBufferSize)];
+            data.CopyTo(this.memory);
+
             var state = new MachineState(this.memory);
             var dataPivot = this.memory.Span;
             this.readPivot = 0;
+            this.relativeBase = 0;
             Span<byte> modeInfoBuffer = stackalloc byte[16];
             Span<byte> componentsBuffer = stackalloc byte[16];
             while (!this.breakFlag)
@@ -149,9 +155,18 @@
 
         internal int MarshallAccess(int value, int mode)
         {
-            return mode == 0
-                ? this.memory.Span[value]
-                : value;
+            switch (mode)
+            {
+                case 0: return this.memory.Span[value];
+                case 1: return value;
+                case 2: return this.memory.Span[this.relativeBase + value];
+                default: throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        internal void OffsetRelativeBase(int address)
+        {
+            this.relativeBase += address;
         }
 
         internal async Task<int> RequestOutputAsync()
