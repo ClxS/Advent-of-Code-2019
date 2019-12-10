@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading.Channels;
     using System.Threading.Tasks;
@@ -12,8 +11,6 @@
     internal class Solver : ISolver
     {
         private readonly (int OpCode, IOp Operation)[] intMachineSupportedCodes;
-
-        const int amplifierCount = 5;
 
         public Solver()
         {
