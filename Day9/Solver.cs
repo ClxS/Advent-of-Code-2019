@@ -30,7 +30,7 @@
             var output = new List<long>();
             intMachine.InputRequested += (sender, args) =>
             {
-                args.Value = 1;
+                args.Value = inputData.Value;
             };
             intMachine.Output += (sender, args) =>
             {
