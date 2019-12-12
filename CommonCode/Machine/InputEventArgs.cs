@@ -16,11 +16,11 @@
             {
                 this.value = value;
                 this.IsSynchronous = true;
-                this.ValueAsync = Task.FromResult(this.value);
+                this.ValueAsync = new ValueTask<long>(this.value);
             }
         }
 
-        public Task<long> ValueAsync { get; set; }
+        public ValueTask<long> ValueAsync { get; set; }
 
         public InputEventArgs()
         {

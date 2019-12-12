@@ -35,7 +35,7 @@
             var largestValue = 0;
             foreach(var phase in GetAvailableThrusterCombinations(inputData.MinimumPhaseSettings, inputData.MaximumPhaseSettings))
             {
-                var value = await this.RunWithPhaseSettings(data, phase.Select(x => (int)x), inputData.UseLoopback);
+                var value = await this.RunWithPhaseSettings(data, phase.Select(x => (int)x), inputData.UseLoopback).ConfigureAwait(false);
                 if (value > largestValue)
                 {
                     largestValue = value;
@@ -104,8 +104,6 @@
             return values.Max();
         }
 
-        private const bool useSyncValue = false;
-
         private IntMachine CreateIntMachine(Channel<int> inputCommChannel, Channel<int> outputCommChannel, int machineIdx)
         {
             var intMachine = new IntMachine(this.intMachineSupportedCodes)
@@ -115,11 +113,11 @@
             };
             intMachine.InputRequested += (sender, args) =>
             {
-                args.ValueAsync = Task.Run(async () =>
+                args.ValueAsync = new ValueTask<long>(Task.Run(async () =>
                 {
                     var value = await inputCommChannel.Reader.ReadAsync();
                     return (long)value;
-                });
+                }));
             };
             intMachine.Output += (sender, args) =>
             {
