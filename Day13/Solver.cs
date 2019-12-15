@@ -25,22 +25,7 @@
         public (int BlocksRemaining, long Score) Solve(Data inputData)
         {
             var data = inputData.OpCodes.Split(',').Select(long.Parse).ToArray();
-            var intMachine = new IntMachine(
-                (1, new Add()),
-                (2, new Multiply()),
-                (3, new Input()),
-                (4, new Output()),
-                (5, new JmpTrue()),
-                (6, new JmpFalse()),
-                (7, new LessThan()),
-                (8, new Equals()),
-                (9, new OffsetRelativeBase()),
-                (99, new Break())
-            )
-            {
-                EnableExtendedOpCodeSupport = true,
-                MinimumBufferSize = 32 * 1024
-            };
+            var intMachine = IntMachine.CreateDefault();
 
             long score = 0;
             var cellTiles = new Dictionary<(long X, long Y), Tile>();

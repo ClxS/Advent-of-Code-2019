@@ -10,24 +10,6 @@
 
     internal class Solver : ISolver
     {
-        private readonly (int OpCode, IOp Operation)[] intMachineSupportedCodes;
-
-        public Solver()
-        {
-            this.intMachineSupportedCodes = new (int OpCode, IOp Operation)[]
-            {
-                (1, new Add()),
-                (2, new Multiply()),
-                (3, new Input()),
-                (4, new Output()),
-                (5, new JmpTrue()),
-                (6, new JmpFalse()),
-                (7, new LessThan()),
-                (8, new Equals()),
-                (99, new Break())
-            };
-        }
-
         public async Task<int> Solve(Data inputData)
         {
             var data = inputData.OpCodes.Split(',').Select(int.Parse).ToArray();
@@ -106,11 +88,7 @@
 
         private IntMachine CreateIntMachine(Channel<int> inputCommChannel, Channel<int> outputCommChannel, int machineIdx)
         {
-            var intMachine = new IntMachine(this.intMachineSupportedCodes)
-            {
-                EnableExtendedOpCodeSupport = true,
-                Id = machineIdx
-            };
+            var intMachine = IntMachine.CreateDefault();
             intMachine.InputRequested += (sender, args) =>
             {
                 args.ValueAsync = new ValueTask<long>(Task.Run(async () =>
