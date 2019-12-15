@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using DefaultOps;
     using Utility.Extensions;
@@ -109,12 +110,12 @@
             return state;
         }
 
-        public async Task<MachineState> ProcessAsync(int[] data)
+        public async Task<MachineState> ProcessAsync(int[] data, CancellationToken cancellationToken = default)
         {
-            return await this.ProcessAsync(data.Select(d => (long)d).ToArray());
+            return await this.ProcessAsync(data.Select(d => (long)d).ToArray(), cancellationToken);
         }
 
-        public async Task<MachineState> ProcessAsync(long[] data)
+        public async Task<MachineState> ProcessAsync(long[] data, CancellationToken cancellationToken = default)
         {
             this.memory = new long[Math.Max(data.Length, this.MinimumBufferSize)];
             data.CopyTo(this.memory);
@@ -122,7 +123,7 @@
             var state = new MachineState(this.memory);
             var dataPivot = this.memory;
             this.readPivot = 0;
-            while (!this.breakFlag)
+            while (!this.breakFlag && !cancellationToken.IsCancellationRequested)
             {
                 var (op, opData, modeInfo) = this.GetOpCodeAndMode(dataPivot);
                 switch (op)

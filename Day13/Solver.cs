@@ -150,7 +150,7 @@
                 return (cellTiles.Count(t => t.Value == Tile.Block), score);
             }, cts.Token);
 
-            Task.Run(async () => { await intMachine.ProcessAsync(data); }, cts.Token);
+            Task.Run(async () => { await intMachine.ProcessAsync(data, cts.Token); }, cts.Token);
 
             return answerTask.Result;
         }
