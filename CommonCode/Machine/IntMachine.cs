@@ -19,6 +19,26 @@
         private int readPivot;
         private int relativeBase;
 
+        public static IntMachine CreateDefault()
+        {
+            return new IntMachine(
+                (1, new Add()),
+                (2, new Multiply()),
+                (3, new Input()),
+                (4, new Output()),
+                (5, new JmpTrue()),
+                (6, new JmpFalse()),
+                (7, new LessThan()),
+                (8, new Equals()),
+                (9, new OffsetRelativeBase()),
+                (99, new Break())
+            )
+            {
+                EnableExtendedOpCodeSupport = true,
+                MinimumBufferSize = 32 * 1024
+            };
+        }
+
         public IntMachine(params (int OpCode, IOp Operation)[] supportOpCodes)
         {
             this.ops = supportOpCodes.ToDictionary(v => (long)v.OpCode, v => v.Operation);
