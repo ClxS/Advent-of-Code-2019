@@ -20,12 +20,6 @@
             East = 4
         }
 
-        public enum DroidState
-        {
-            Explore,
-            CalculateDistance
-        }
-
         public enum TileType
         {
             Open,
@@ -76,7 +70,7 @@
             (long X, long Y) position = (0, 0);
 
             this.AddTile(position, tiles, TileType.Open);
-            var state = DroidState.Explore;
+            var state = inputData.States.Dequeue();
             var result = Task.Run(async () =>
             {
                 Queue<Direction> path = null;
@@ -91,7 +85,8 @@
                         }
                         else
                         {
-                            state = DroidState.CalculateDistance;
+                            // Exploration done, move to next state
+                            state = inputData.States.Dequeue();
                         }
                     }
 
@@ -124,6 +119,11 @@
                             var pathToOxygen = DijkstraSearch((0, 0), t => t.Type == TileType.OxygenSystem, tiles);
                             cts.Cancel();
                             return pathToOxygen.Length;
+                        case DroidState.CalculateOxygenDistributionTime:
+                            var oxygenTile = tiles.First(t => t.Value.Type == TileType.OxygenSystem);
+                            var distributionTime = DijkstraLongestPath(oxygenTile.Key, tiles);
+                            cts.Cancel();
+                            return distributionTime;
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
@@ -143,7 +143,44 @@
                     // Ignored
                 }
             }, cts.Token);
+
             return result.Result;
+        }
+
+        private static int DijkstraLongestPath(
+            (long X, long Y) start,
+            IReadOnlyDictionary<(long X, long Y), ExploredTile> tiles)
+        {
+            var encounteredCells = new HashSet<(long, long)>();
+
+            var pathQueues = new Queue<(Direction[] Path, (long X, long Y) EndPoint)>();
+            foreach (var direction in tiles[start].OpenNeighbours)
+            {
+                pathQueues.Enqueue((new[] { direction }, MovePosition(start, direction)));
+            }
+
+            var longestPath = 0;
+            while (pathQueues.Count > 0)
+            {
+                var (path, endPoint) = pathQueues.Dequeue();
+                if (!encounteredCells.Add(endPoint))
+                {
+                    continue;
+                }
+
+                if (path.Length > longestPath)
+                {
+                    longestPath = path.Length;
+                }
+
+                var cell = tiles[endPoint];
+                foreach (var direction in cell.OpenNeighbours)
+                {
+                    pathQueues.Enqueue((path.Concat(new[] { direction }).ToArray(), MovePosition(endPoint, direction)));
+                }
+            }
+
+            return longestPath;
         }
 
         private static Direction[] DijkstraSearch(
@@ -151,7 +188,7 @@
             Func<ExploredTile, bool> searchCondition,
             IReadOnlyDictionary<(long X, long Y), ExploredTile> tiles)
         {
-            HashSet<(long, long)> encounteredCells = new HashSet<(long, long)>();
+            var encounteredCells = new HashSet<(long, long)>();
 
             var pathQueues = new Queue<(Direction[] Path, (long X, long Y) EndPoint)>();
             foreach (var direction in tiles[start].OpenNeighbours)

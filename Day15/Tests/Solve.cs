@@ -25,10 +25,26 @@
             using (new ScopedTimer(this.testOutputHelper))
             {
                 var data = reader.ReadToEnd();
-                value = new Solver().Solve(new Data(data, false));
+                value = new Solver().Solve(new Data(data, false, new []{ DroidState.Explore, DroidState.CalculateDistance }));
             }
 
             this.testOutputHelper.WriteLine($"Fewest Movements Required: {value}");
+        }
+
+        [Fact]
+        public void InputDataPart2()
+        {
+            var resourceName = "Day15.Tests.inputdata.txt";
+            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
+            using var reader = new StreamReader(stream);
+            int value;
+            using (new ScopedTimer(this.testOutputHelper))
+            {
+                var data = reader.ReadToEnd();
+                value = new Solver().Solve(new Data(data, false, new[] { DroidState.Explore, DroidState.CalculateOxygenDistributionTime }));
+            }
+
+            this.testOutputHelper.WriteLine($"Disbursement Time: {value}");
         }
     }
 }
