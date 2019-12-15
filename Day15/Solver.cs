@@ -8,12 +8,13 @@
     using System.Threading.Channels;
     using System.Threading.Tasks;
     using CommonCode.Machine;
-    using CommonCode.Machine.DefaultOps;
     using Extensions;
     using Utility;
 
     internal class Solver : ISolver
     {
+        public event EventHandler<VisualiserUpdateEventArgs> VisualisableUpdate;
+
         public int Solve(Data inputData)
         {
             var cts = new CancellationTokenSource();
@@ -64,10 +65,13 @@
                     switch (state)
                     {
                         case DroidState.Explore:
-                            position = await this.Explore(position, path, serverToMachineChannel, machineToServerChannel, tiles, cts.Token);
+                            position = await this.Explore(position, path, serverToMachineChannel,
+                                machineToServerChannel, tiles, cts.Token);
+                            this.VisualisableUpdate?.Invoke(this, new VisualiserUpdateEventArgs(tiles));
                             break;
                         case DroidState.CalculateDistance:
-                            var pathToOxygen = PathingUtility.DijkstraSearch((0, 0), t => t.Type == TileType.OxygenSystem, tiles);
+                            var pathToOxygen =
+                                PathingUtility.DijkstraSearch((0, 0), t => t.Type == TileType.OxygenSystem, tiles);
                             cts.Cancel();
                             return pathToOxygen.Length;
                         case DroidState.CalculateOxygenDistributionTime:
@@ -97,12 +101,62 @@
             return result.Result;
         }
 
+        private static void AddTile((long X, long Y) tilePosition, Dictionary<(long X, long Y), ExploredTile> tiles,
+            TileType tile)
+        {
+            if (tiles.ContainsKey(tilePosition))
+            {
+                return;
+            }
+
+            tiles[tilePosition] = ExploredTile.Create(tilePosition, tile, tiles);
+            foreach (var (position, direction) in tilePosition.GetAdjacentPositions())
+            {
+                if (tiles.TryGetValue(position, out var neighbourCell))
+                {
+                    neighbourCell.SetNeighbour(direction.Reverse(), tile);
+                }
+            }
+        }
+
+        private static int CalculateOxygenDistributionTime(IReadOnlyDictionary<(long X, long Y), ExploredTile> tiles)
+        {
+            var oxygenTile = tiles.First(t => t.Value.Type == TileType.OxygenSystem);
+            var distributionTime = PathingUtility.DijkstraLongestPath(oxygenTile.Key, tiles);
+            return distributionTime;
+        }
+
+        private static Direction[] DecideMovement((long X, long Y) position,
+            Dictionary<(long X, long Y), ExploredTile> tiles)
+        {
+            var current = tiles[position];
+            if (current.HasUnexploredNeighbours)
+            {
+                var direction = current.UnexploredNeighbours.First();
+                var queue = new[]
+                {
+                    direction,
+                    direction.Reverse()
+                };
+
+                return queue;
+            }
+
+            return JourneyToNearestEmpty(position, tiles);
+        }
+
+        private static Direction[] JourneyToNearestEmpty((long X, long Y) position,
+            IReadOnlyDictionary<(long X, long Y), ExploredTile> tiles)
+        {
+            return PathingUtility.DijkstraSearch(position, (t) => t.HasUnexploredNeighbours, tiles);
+        }
+
         private async Task<(long X, long Y)> Explore(
             (long X, long Y) position,
             Queue<Direction> path,
             Channel<long, long> serverToMachineChannel,
             Channel<long, long> machineToServerChannel,
-            Dictionary<(long X, long Y),ExploredTile> tiles,
+            Dictionary<(long X, long Y), ExploredTile> tiles,
             CancellationToken token)
         {
             Debug.Assert(path != null, nameof(path) + " != null");
@@ -127,54 +181,6 @@
             }
 
             return position;
-        }
-
-        private static int CalculateOxygenDistributionTime(IReadOnlyDictionary<(long X, long Y), ExploredTile> tiles)
-        {
-            var oxygenTile = tiles.First(t => t.Value.Type == TileType.OxygenSystem);
-            var distributionTime = PathingUtility.DijkstraLongestPath(oxygenTile.Key, tiles);
-            return distributionTime;
-        }
-
-        private static void AddTile((long X, long Y) tilePosition, Dictionary<(long X, long Y), ExploredTile> tiles,
-            TileType tile)
-        {
-            if (tiles.ContainsKey(tilePosition))
-            {
-                return;
-            }
-
-            tiles[tilePosition] = ExploredTile.Create(tilePosition, tile, tiles);
-            foreach (var (position, direction) in tilePosition.GetAdjacentPositions())
-            {
-                if (tiles.TryGetValue(position, out var neighbourCell))
-                {
-                    neighbourCell.SetNeighbour(direction.Reverse(), tile);
-                }
-            }
-        }
-
-        private static Direction[] DecideMovement((long X, long Y) position, Dictionary<(long X, long Y), ExploredTile> tiles)
-        {
-            var current = tiles[position];
-            if (current.HasUnexploredNeighbours)
-            {
-                var direction = current.UnexploredNeighbours.First();
-                var queue = new[]
-                {
-                    direction,
-                    direction.Reverse()
-                };
-
-                return queue;
-            }
-
-            return JourneyToNearestEmpty(position, tiles);
-        }
-
-        private static Direction[] JourneyToNearestEmpty((long X, long Y) position, IReadOnlyDictionary<(long X, long Y), ExploredTile> tiles)
-        {
-            return PathingUtility.DijkstraSearch(position, (t) => t.HasUnexploredNeighbours, tiles);
         }
     }
 }
