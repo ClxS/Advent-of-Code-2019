@@ -7,6 +7,11 @@
     {
         public static byte[] DecomposeInt(this int value)
         {
+            if (value == 0)
+            {
+                return new byte[] { 0 };
+            }
+
             var output = new Stack<byte>();
             while (value > 0)
             {
